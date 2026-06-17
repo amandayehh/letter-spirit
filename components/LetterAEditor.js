@@ -86,6 +86,7 @@ export default function LetterAEditor() {
     try {
       const record = addLetter([...lit]);
       if (!record) throw new Error("could not save letter");
+      setLit(new Set()); // clear the canvas for the next letter
       setStatus("shared");
       setTimeout(() => setStatus("idle"), 2000); // checkmark, then back to "Share"
     } catch (err) {
