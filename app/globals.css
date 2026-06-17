@@ -1,0 +1,271 @@
+:root {
+  /* ---- colors ---- */
+  --color-letter:      #001EFF;   /* drawn strokes + the letter pill text */
+  --color-border:      #99A8CC;   /* grid dots, dotted guides, reference lines, labels */
+  --color-page:        #ffffff;   /* the editor surface */
+  --color-backdrop:    #e6e6e6;   /* grey around the page on desktop */
+  --color-pill:        #ececec;   /* letter pill background */
+  --color-dark:        #111111;   /* primary button */
+  --color-dark-hover:  #333333;
+  --color-muted:       #999999;   /* ghost button */
+  --color-muted-hover: #555555;
+
+  /* ---- type ---- */
+  --font-sans:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size-ref:   10px;    /* ascender / x height / baseline / descender labels */
+  --font-size-pill:  40px;   /* the letter */
+  --font-size-btn:   15px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-backdrop);   /* grey shows around the page on desktop */
+  font-family: var(--font-sans);
+  color: var(--color-letter);
+}
+
+.page {
+  background: var(--color-page);
+  width: 100%;
+  max-width: 600px;
+  height: 100vh;                 /* fallback for browsers without dvh */
+  height: 100dvh;                /* exact viewport — content fits, never scrolls */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* button on top, grid in the middle, strip/letter at the bottom */
+  padding: 32px 16px;            /* 16px left/right page margin */
+  overflow: hidden;
+}
+
+/* full-width stage so the reference rows can span the whole page; it grows to
+   fill all the height between the top button and the bottom strip, and the
+   grid is sized to that height (centered) inside it */
+.stage {
+  position: relative;
+  width: 100%;
+  flex: 1 1 0%;                  /* grow into leftover space; basis 0 so the tall
+                                    grid's intrinsic height can't inflate the row
+                                    and push the switcher past the page bottom */
+  min-height: 0;                 /* allow the flex item to shrink, not overflow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Centered grid that fills the stage height. Width follows from the 3/7.2
+   aspect ratio (matching the viewBox), so it stays proportional — taller
+   stage ⇒ proportionally wider grid — and never exceeds the page width. */
+.grid {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;                    /* dots paint above the full-width lines */
+  aspect-ratio: 3 / 7.2;
+  touch-action: none;            /* let us draw instead of scroll */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* grid pieces */
+/* dotted guides: even interval count puts a dot on each midpoint,
+   so cell X-crossings show a single shared dot, not two offset ones */
+.guide       { stroke: var(--color-border); stroke-width: 0.022; stroke-linecap: round; stroke-dasharray: 0 0.1; fill: none; }
+.guide.diag  { stroke-dasharray: 0 0.1010152; }  /* √2 / 14 */
+.lit         { stroke: var(--color-letter); stroke-width: 0.17; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.hit         { stroke: transparent; stroke-width: 0.30; stroke-linecap: round; fill: none; cursor: pointer; pointer-events: stroke; }
+.dot         { fill: var(--color-border); }
+
+/* ascender / x height / baseline / descender rows: a full-width line with its
+   label tucked just below it (top set inline per row). The descender's label
+   goes ABOVE its line instead, so neither the top nor the bottom label eats
+   vertical space outside the grid. */
+.refrow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 0;                    /* sits behind the grid */
+  pointer-events: none;
+}
+.ref-line {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+}
+.ref-label {
+  position: absolute;
+  top: 100%;                     /* below the line */
+  left: 0;
+  margin-top: 5px;
+  font-size: var(--font-size-ref);
+  color: var(--color-border);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.refrow.descender .ref-label {
+  top: auto;
+  bottom: 100%;                  /* above the line */
+  margin-top: 0;
+  margin-bottom: 5px;
+}
+
+/* swipeable letter switcher — full width; the centered letter is selected.
+   Horizontal padding lets the first/last letter scroll to the center. */
+.switcher {
+  margin-top: 24px;
+  width: 100%;
+  flex-shrink: 0;                /* never compress the letter picker; the stage
+                                    absorbs any squeeze instead */
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px calc(50% - 36px);
+  touch-action: pan-x;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.switcher::-webkit-scrollbar { display: none; }
+
+.glyph-tab {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 64px;
+  scroll-snap-align: center;
+  display: grid;
+  place-items: center;
+  border: 2px solid transparent;   /* reserved so the active outline doesn't shift layout */
+  background: none;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: var(--font-size-pill);
+  line-height: 1;
+  color: var(--color-border);
+  cursor: pointer;
+}
+/* letters that have been drawn read as "finished" in the letter color */
+.glyph-tab.drawn {
+  color: var(--color-letter);
+}
+/* the currently selected letter: tinted fill */
+.glyph-tab.active {
+  background: rgba(0, 30, 255, 0.07);
+  color: var(--color-letter);
+}
+
+/* a drawn letter shows its own gridletter shape instead of the character */
+.mini {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  display: block;
+}
+.mini-lit {
+  stroke: var(--color-letter);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;   /* constant pixel weight at this small size */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.actions {
+  margin-top: 22px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn {
+  border: none;
+  border-radius: 999px;
+  background: var(--color-dark);
+  color: #fff;
+  font-size: var(--font-size-btn);
+  letter-spacing: 0.02em;
+  padding: 11px 22px;
+  cursor: pointer;
+}
+.btn:hover { background: var(--color-dark-hover); }
+
+.btn.ghost {
+  background: none;
+  color: var(--color-muted);
+  padding: 11px 14px;
+  text-decoration: none;
+}
+.btn.ghost:hover { color: var(--color-muted-hover); }
+
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- top icon button (share on /a, download on the home view) ---- */
+
+/* square outlined icon button. Light until something is drawn, then it fills
+   dark blue to signal it's ready (to share / to download). */
+.icon-btn {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 2px solid var(--color-border);
+  background: var(--color-page);
+  color: var(--color-border);    /* icon color when inactive */
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn:disabled { cursor: default; }
+.icon-btn.active {
+  background: var(--color-letter);
+  border-color: var(--color-letter);
+  color: #fff;                   /* icon turns white on the blue fill */
+  cursor: pointer;
+}
+
+/* the single locked letter shown at the bottom of the /a page */
+.single-letter {
+  flex: 0 0 auto;
+  font-size: var(--font-size-pill);
+  line-height: 1;
+  color: var(--color-letter);
+}
+
+/* ---- the wall ---- */
+.wall-page {
+  background: var(--color-page);
+  width: 100%;
+  min-height: 100vh;
+  padding: 32px 24px 96px;   /* bottom room so the grid clears the button */
+}
+.wall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+}
+.wall-cell {
+  aspect-ratio: 3 / 7.2;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+}
+
+/* wipe-the-wall button, pinned bottom-right */
+.wall-clear {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2;
+}
