@@ -269,3 +269,18 @@ body {
   bottom: 24px;
   z-index: 2;
 }
+
+.wall-empty {
+  color: var(--color-muted);
+  font-size: var(--font-size-btn);
+}
+.wall-empty a { color: var(--color-letter); text-decoration: none; }
+
+/* link to the wall from the /a page */
+.wall-link {
+  margin-top: 16px;
+  color: var(--color-muted);
+  font-size: var(--font-size-btn);
+  text-decoration: none;
+}
+.wall-link:hover { color: var(--color-muted-hover); }

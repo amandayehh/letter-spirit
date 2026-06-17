@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import { buildSegments } from "@/lib/gridfont";
 import { getLetters, clearLetters } from "@/lib/store";
@@ -25,14 +26,22 @@ export default function Wall() {
 
   return (
     <div className="wall-page">
-      <div className="wall-grid">
-        {letters.map((l) => (
-          <div key={l.id} className="wall-cell">
-            <MiniGlyph set={l.segs} segByKey={segByKey} />
-          </div>
-        ))}
-      </div>
-      <button className="btn wall-clear" onClick={onClear}>Clear wall</button>
+      {letters.length === 0 ? (
+        <p className="wall-empty">
+          No letters yet. <Link href="/a">Draw an a →</Link>
+        </p>
+      ) : (
+        <div className="wall-grid">
+          {letters.map((l) => (
+            <div key={l.id} className="wall-cell">
+              <MiniGlyph set={l.segs} segByKey={segByKey} />
+            </div>
+          ))}
+        </div>
+      )}
+      {letters.length > 0 && (
+        <button className="btn wall-clear" onClick={onClear}>Clear wall</button>
+      )}
     </div>
   );
 }

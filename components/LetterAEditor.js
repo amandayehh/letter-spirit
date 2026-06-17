@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import { buildSegments, isDiag, REF_ROWS, DOTS } from "@/lib/gridfont";
 import { addLetter } from "@/lib/store";
@@ -159,6 +160,8 @@ export default function LetterAEditor() {
 
       {/* the single locked letter, shown at the bottom */}
       <div className="single-letter">a</div>
+
+      <Link href="/wall" className="wall-link">the wall →</Link>
     </div>
   );
 }
